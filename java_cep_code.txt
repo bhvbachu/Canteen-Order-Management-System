@@ -1,0 +1,143 @@
+import java . sql .∗;
+import java . util . Scanner ;
+public class CanteenOrderManagement {
+public static void main(String [] args) {
+Scanner sc = new Scanner(System. in );
+try {
+Connection con = DriverManager. getConnection(
+”jdbc : mysql:// localhost :3306/canteen” ,
+”root” , ””
+) ;
+System. out . println (”===CANTEENMENU===”);
+Statement st = con. createStatement ();
+ResultSet rs = st .executeQuery(
+”SELECT∗FROMFood Menu”
+) ;
+while (rs . next ()) {
+System. out . println (
+rs . getInt (”item
+i d”) + ”. ” +
+rs . getString (”item
+name”) +
+” −Rs.” + rs.getDouble(”price”)
+) ;
+}
+rs . close ();
+st . close ();
+System. out . print (”Enter Student ID: ”);
+int sid = sc.nextInt ();
+sc . nextLine ();
+System. out . print (”Enter Student Name: ”);
+5
+String name = sc.nextLine ();
+System. out . print (”Enter Phone Number: ”);
+String phone = sc.nextLine ();
+PreparedStatement ps = con. prepareStatement(
+”INSERTINTOStudent VALUES (?, ?, ?) ” +
+”ONDUPLICATEKEYUPDATEname=?, phone=?”
+) ;
+ps . setInt (1 , sid );
+ps . setString (2 , name);
+ps . setString (3 , phone);
+ps . setString (4 , name);
+ps . setString (5 , phone);
+ps . executeUpdate ();
+ps . close ();
+PreparedStatement ops = con. prepareStatement(
+”INSERTINTOOrders ” +
+”( student id , total amount , status) ” +
+”VALUES (? , 0, ’Pending ’)”,
+Statement .RETURNGENERATEDKEYS
+) ;
+ops . setInt (1 , sid );
+ops . executeUpdate ();
+ResultSet keys = ops.getGeneratedKeys ();
+keys . next ();
+int orderId = keys. getInt (1);
+keys . close ();
+ops . close ();
+double total = 0;
+char more;
+do {
+System. out . print (”Enter Food Item ID: ”);
+int itemId = sc.nextInt ();
+System. out . print (”Enter Quantity : ”);
+int qty = sc.nextInt ();
+i f (qty <= 0) {
+System. out . println (”Invalid quantity !”);
+more = ’y’;
+continue;
+}
+PreparedStatement menu = con. prepareStatement(
+6
+name , price FROMFood Menu ” +
+”SELECT item
+”WHERE item
+) ;
+i d=?AND availability=’Available ’”
+menu. setInt (1 , itemId );
+ResultSet food = menu.executeQuery ();
+i f (! food . next ()) {
+System. out . println (”Invalid food item !”);
+food . close ();
+menu. close ();
+more = ’y’;
+continue;
+}
+String itemName = food. getString(”item
+name”);
+double price = food.getDouble(”price”);
+double subtotal = price ∗ qty;
+food . close ();
+menu. close ();
+PreparedStatement detail = con. prepareStatement(
+”INSERTINTOOrder Details ” +
+”( order id , item
+i d , quantity , subtotal) ” +
+”VALUES (? , ?, ?, ?)”
+) ;
+detail . setInt (1 , orderId );
+detail . setInt (2 , itemId );
+detail . setInt (3 , qty );
+detail . setDouble (4 , subtotal );
+detail . executeUpdate ();
+detail . close ();
+t otal += subtotal ;
+System. out . println (itemName +
+” added. Amount: Rs.” + subtotal );
+System. out . print (”Add another item? (y/n): ”);
+more = sc.next (). charAt(0);
+} while (more == ’y’ || more == ’Y’);
+PreparedStatement update = con. prepareStatement(
+”UPDATEOrders SET total amount=?WHERE order id=?”
+) ;
+update . setDouble(1 , total );
+update . setInt (2 , orderId );
+7
+update . executeUpdate ();
+update . close ();
+PreparedStatement payment = con. prepareStatement(
+”INSERTINTOPayment ” +
+”( order id , amount, payment status) ” +
+”VALUES (? , ?, ’Pending ’)”
+) ;
+payment. setInt (1 , orderId );
+payment. setDouble(2 , total );
+payment. executeUpdate ();
+payment. close ();
+System. out . println (”\n===FINALBILL===”);
+System. out . println (”Student : ” + name);
+System. out . println (”Order ID: ” + orderId );
+System. out . printf (
+”Total Amount: Rs.%.2f%n” , total
+) ;
+System. out . println (”Payment Status : Pending”);
+con . close ();
+} catch (SQLException e) {
+System. out . println (
+”Database Error : ” + e.getMessage()
+) ;
+}
+sc . close ();
+}
+}
